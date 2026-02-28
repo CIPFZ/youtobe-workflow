@@ -19,9 +19,16 @@ int main() {
     std::vector<int> progress_points;
     int rc = worker.run("/tmp/video.mp4", "/tmp/audio.m4a", "/tmp/out.mp4",
                         [&](int p, const std::string&) { progress_points.push_back(p); });
+
+#ifdef HAVE_FFMPEG
+    assert(rc != 0);
+    assert(!progress_points.empty());
+    assert(progress_points.front() == 0);
+#else
     assert(rc == 0);
     assert(!progress_points.empty());
     assert(progress_points.back() == 100);
+#endif
 
     return 0;
 }

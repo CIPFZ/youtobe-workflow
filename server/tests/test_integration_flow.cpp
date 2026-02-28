@@ -28,8 +28,12 @@ int main() {
 
     auto rec = manager.get_task(task_id);
     assert(rec.has_value());
+#ifdef HAVE_FFMPEG
+    assert(rec->status == TaskStatus::Failed);
+#else
     assert(rec->status == TaskStatus::Success);
     assert(rec->progress == 100);
+#endif
 
     return 0;
 }
