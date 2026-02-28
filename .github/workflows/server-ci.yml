@@ -1,0 +1,71 @@
+name: server-ci
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [fallback, full]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install base toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config git ca-certificates
+
+      - name: Install FFmpeg dev libs (full profile)
+        if: matrix.profile == 'full'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libavformat-dev libavcodec-dev libavutil-dev \
+            libssl-dev zlib1g-dev uuid-dev
+
+      - name: Build and install sogou/workflow (full profile)
+        if: matrix.profile == 'full'
+        run: |
+          git clone --depth 1 https://github.com/sogou/workflow.git /tmp/workflow
+          make -C /tmp/workflow -j"$(nproc)"
+          sudo make -C /tmp/workflow install
+
+      - name: Configure
+        run: |
+          if [ "${{ matrix.profile }}" = "fallback" ]; then
+            cmake -S server -B server/build -DENABLE_WORKFLOW=OFF -DENABLE_FFMPEG=OFF
+          else
+            cmake -S server -B server/build -DENABLE_WORKFLOW=ON -DENABLE_FFMPEG=ON
+          fi
+
+      - name: Build
+        run: cmake --build server/build -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir server/build --output-on-failure
+
+      - name: Package runnable bundle (full profile)
+        if: matrix.profile == 'full'
+        run: |
+          rm -rf dist
+          ./scripts/package_bundle.sh server/build/av_service dist
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: av-service-${{ matrix.profile }}
+          path: |
+            server/build/av_service
+            server/build/Testing/**
+            dist/av-service-full.tar.gz
+          if-no-files-found: ignore
