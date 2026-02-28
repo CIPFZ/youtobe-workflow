@@ -1,0 +1,12 @@
+services:
+  av-service:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: youtobe-workflow/av-service:dev
+    container_name: av-service
+    restart: unless-stopped
+    volumes:
+      - ./data/input:/data/input
+      - ./data/output:/data/output
+    command: ["/app/av_service"]
