@@ -14,9 +14,17 @@
 
 工作流会执行两个构建档位：
 1. `fallback`：关闭 workflow/ffmpeg 依赖，验证基础工程与测试链路。
-2. `ffmpeg`：开启 FFmpeg C API（安装 `libav*` 开发包），验证 FFmpeg 集成链路可编译可测试。
+2. `full`：安装并编译 `sogou/workflow` + FFmpeg 开发库，构建真实可运行服务。
 
-每次运行会上传构建产物（`av_service`）和测试输出（`Testing/**`）到 Actions Artifacts，方便你直接下载查看。
+`full` 档位会额外打包可直接运行的发布包：`av-service-full.tar.gz`（包含 `av_service`、依赖动态库、`run.sh` 启动脚本）。
+
+每次运行会上传构建产物与测试输出到 Actions Artifacts，下载后可直接运行：
+
+```bash
+tar -xzf av-service-full.tar.gz
+cd av-service-full
+./run.sh
+```
 
 ---
 
