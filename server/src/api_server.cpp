@@ -108,7 +108,12 @@ int ApiServer::start(unsigned short port) const {
                         manager_.update_status(task_id, p >= 100 ? TaskStatus::Success : TaskStatus::Running, p, msg);
                     });
                     if (rc != 0) {
-                        manager_.update_status(task_id, TaskStatus::Failed, 0, "merge failed");
+                        std::string err = "merge failed";
+                        const auto rec = manager_.get_task(task_id);
+                        if (rec.has_value() && !rec->message.empty()) {
+                            err = rec->message;
+                        }
+                        manager_.update_status(task_id, TaskStatus::Failed, 0, err);
                     }
                 }).detach();
             }
