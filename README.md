@@ -44,6 +44,27 @@ curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 
 ---
 
+### 6) 一键更新（含健康检查与自动回滚）
+
+```bash
+chmod +x scripts/deploy_update.sh scripts/rollback_last.sh
+./scripts/deploy_update.sh
+```
+
+可选环境变量：
+
+- `SERVICE_NAME`（默认 `av-service`）
+- `HEALTH_URL`（默认 `http://127.0.0.1:8888/healthz`）
+- `MAX_RETRIES`（默认 `30`）
+- `SLEEP_SECONDS`（默认 `2`）
+
+如果需要手工回滚到某个镜像版本：
+
+```bash
+./scripts/rollback_last.sh ghcr.io/cipfz/youtobe-workflow/av-service:sha-<commit>
+```
+
+
 
 ## Docker 镜像自动构建并发布（推荐）
 
