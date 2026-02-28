@@ -2,66 +2,29 @@
 
 当前目标：基于 **sogou/workflow** 提供 Web API，并在接口模块中集成 **FFmpeg C API** 完成音视频合并（先做一个简单可用功能）。
 
-## 1) 使用 GitHub Workflow 自动构建（无需本地编译）
+## 推荐部署方式：Docker（避免本地缺库）
 
-你已经把代码合入 `main` 后，可以完全依赖 GitHub Actions：
+你遇到的 `libworkflow.so / libavformat.so not found` 本质上是运行环境缺动态库。对于当前阶段，**最稳妥方式就是直接用 Docker 部署运行**。
 
-- 工作流文件：`.github/workflows/server-ci.yml`
-- 触发方式：
-  - push 到 `main`
-  - 对 `main` 发起 PR
-  - Actions 页面手工点击 `Run workflow`
-
-工作流会执行两个构建档位：
-1. `fallback`：关闭 workflow/ffmpeg 依赖，验证基础工程与测试链路。
-2. `full`：安装并编译 `sogou/workflow` + FFmpeg 开发库，构建真实可运行服务。
-
-`fallback` 的目的：
-- 防止第三方依赖源偶发失败时整条 CI 全红（保留核心代码质量反馈）。
-- 快速验证与依赖无关的逻辑（TaskManager、测试框架、构建脚本）。
-- 作为最小可用兜底，帮助定位是“业务代码问题”还是“外部依赖环境问题”。
-
-`full` 档位会额外打包可直接运行的发布包：`av-service-full.tar.gz`（包含 `av_service`、依赖动态库、`run.sh` 启动脚本）。
-
-每次运行会上传构建产物与测试输出到 Actions Artifacts，下载后可直接运行：
+### 1) 构建并启动
 
 ```bash
-tar -xzf av-service-full.tar.gz
-cd av-service-full
-./run.sh
+docker compose up --build -d
 ```
 
----
-
-## 2) 本地（可选）
-
-如果你临时想本地验证，才需要执行：
+### 2) 查看服务日志
 
 ```bash
-cmake -S server -B server/build
-cmake --build server/build -j
-ctest --test-dir server/build --output-on-failure
+docker compose logs -f av-service
 ```
 
-> 若本机未安装 workflow/FFmpeg 开发库，项目会进入 fallback 编译模式。
-
----
-
-## 3) 接口说明（第一版）
-
-启动服务（需要 workflow 依赖可用）：
-
-```bash
-./server/build/av_service
-```
-
-健康检查：
+### 3) 健康检查
 
 ```bash
 curl http://127.0.0.1:8888/healthz
 ```
 
-提交合并任务：
+### 4) 提交合并任务
 
 ```bash
 curl -X POST http://127.0.0.1:8888/api/v1/merge \
@@ -73,8 +36,42 @@ curl -X POST http://127.0.0.1:8888/api/v1/merge \
   }'
 ```
 
-查询任务状态：
+### 5) 查询任务状态
 
 ```bash
 curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 ```
+
+---
+
+## GitHub Workflow 自动构建（无需本地编译）
+
+- 工作流文件：`.github/workflows/server-ci.yml`
+- 触发方式：
+  - push 到 `main`
+  - 对 `main` 发起 PR
+  - Actions 页面手工点击 `Run workflow`
+
+工作流两个档位：
+1. `fallback`：关闭 workflow/ffmpeg 依赖，用于基础链路兜底验证。
+2. `full`：安装并编译 `sogou/workflow` + FFmpeg 开发库，构建真实可运行服务。
+
+`fallback` 的目的：
+- 防止第三方依赖源波动导致 CI 完全不可用。
+- 快速定位“代码问题”与“依赖环境问题”。
+
+`full` 档位会上传发布包：`av-service-full.tar.gz`（包含可执行文件、依赖库、`run.sh`）。
+
+---
+
+## 本地（可选）
+
+如果你临时想本地验证，才需要执行：
+
+```bash
+cmake -S server -B server/build
+cmake --build server/build -j
+ctest --test-dir server/build --output-on-failure
+```
+
+> 若本机未安装 workflow/FFmpeg 开发库，项目会进入 fallback 编译模式。
