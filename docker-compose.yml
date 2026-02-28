@@ -1,0 +1,14 @@
+services:
+  av-service:
+    image: ${AV_SERVICE_IMAGE:-ghcr.io/cipfz/youtobe-workflow/av-service:latest}
+    pull_policy: always
+    container_name: av-service
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data/input:/data/input
+      - ./data/output:/data/output
+    environment:
+      - LD_LIBRARY_PATH=/usr/local/lib
+    command: ["/app/av_service"]
