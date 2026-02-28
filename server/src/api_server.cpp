@@ -4,7 +4,6 @@
 
 #ifdef HAVE_WORKFLOW
 #include <workflow/WFHttpServer.h>
-#include <workflow/HttpUtil.h>
 #endif
 
 namespace avsvc {
@@ -29,6 +28,30 @@ std::string extract_json_value(const std::string& body, const std::string& key) 
         return "";
     }
     return body.substr(first_quote + 1, second_quote - first_quote - 1);
+}
+
+
+std::string extract_query_value(const std::string& uri, const std::string& key) {
+    const auto qpos = uri.find('?');
+    if (qpos == std::string::npos) {
+        return "";
+    }
+    const std::string query = uri.substr(qpos + 1);
+    const std::string prefix = key + "=";
+    size_t start = 0;
+    while (start <= query.size()) {
+        const auto amp = query.find('&', start);
+        const auto end = (amp == std::string::npos) ? query.size() : amp;
+        const std::string kv = query.substr(start, end - start);
+        if (kv.rfind(prefix, 0) == 0) {
+            return kv.substr(prefix.size());
+        }
+        if (amp == std::string::npos) {
+            break;
+        }
+        start = amp + 1;
+    }
+    return "";
 }
 
 std::string json_escape(const std::string& s) {
@@ -95,14 +118,14 @@ int ApiServer::start(unsigned short port) const {
         }
 
         if (method == "GET" && uri.rfind("/api/v1/task", 0) == 0) {
-            const char* task_id_c = HttpUtil::get_query_value("task_id", req, nullptr);
-            if (!task_id_c || std::string(task_id_c).empty()) {
+            const std::string task_id = extract_query_value(uri, "task_id");
+            if (task_id.empty()) {
                 resp->set_status_code("400");
                 resp->append_output_body("{\"error\":\"task_id is required\"}");
                 return;
             }
 
-            const auto rec = manager_.get_task(task_id_c);
+            const auto rec = manager_.get_task(task_id);
             if (!rec.has_value()) {
                 resp->set_status_code("404");
                 resp->append_output_body("{\"error\":\"task not found\"}");
