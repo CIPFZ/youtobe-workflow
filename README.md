@@ -44,6 +44,38 @@ curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 
 ---
 
+
+## Docker 镜像自动构建并发布（推荐）
+
+我已经新增 GitHub Actions：`.github/workflows/docker-publish.yml`，会在 `main` 分支 push 后自动构建并发布镜像到 **GHCR**（GitHub Container Registry）。
+
+镜像地址：
+
+- `ghcr.io/<你的组织或用户名>/youtobe-workflow/av-service:latest`
+- `ghcr.io/<你的组织或用户名>/youtobe-workflow/av-service:sha-<commit>`
+
+本地服务器更新命令：
+
+```bash
+docker login ghcr.io
+docker pull ghcr.io/<你的组织或用户名>/youtobe-workflow/av-service:latest
+docker rm -f av-service || true
+docker run -d --name av-service \
+  -p 8888:8888 \
+  -v $(pwd)/data/input:/data/input \
+  -v $(pwd)/data/output:/data/output \
+  ghcr.io/<你的组织或用户名>/youtobe-workflow/av-service:latest
+```
+
+如果你更喜欢 compose，可以把 `docker-compose.yml` 的 `image` 改成上面的 GHCR 镜像，然后：
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+---
+
 ## GitHub Workflow 自动构建（无需本地编译）
 
 - 工作流文件：`.github/workflows/server-ci.yml`

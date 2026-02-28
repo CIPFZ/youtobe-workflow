@@ -1,9 +1,7 @@
 services:
   av-service:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
-    image: youtobe-workflow/av-service:full
+    image: ${AV_SERVICE_IMAGE:-ghcr.io/cipfz/youtobe-workflow/av-service:latest}
+    pull_policy: always
     container_name: av-service
     restart: unless-stopped
     ports:
