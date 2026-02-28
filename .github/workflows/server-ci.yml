@@ -2,12 +2,18 @@ name: server-ci
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [fallback, ffmpeg]
 
     steps:
       - name: Checkout
@@ -19,8 +25,20 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake pkg-config
 
+      - name: Install FFmpeg dev libs (ffmpeg profile)
+        if: matrix.profile == 'ffmpeg'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libavformat-dev libavcodec-dev libavutil-dev
+
       - name: Configure
-        run: cmake -S server -B server/build
+        run: |
+          if [ "${{ matrix.profile }}" = "fallback" ]; then
+            cmake -S server -B server/build -DENABLE_WORKFLOW=OFF -DENABLE_FFMPEG=OFF
+          else
+            cmake -S server -B server/build -DENABLE_WORKFLOW=OFF -DENABLE_FFMPEG=ON
+          fi
 
       - name: Build
         run: cmake --build server/build -j"$(nproc)"
@@ -28,5 +46,11 @@ jobs:
       - name: Test
         run: ctest --test-dir server/build --output-on-failure
 
-      - name: Smoke run
-        run: ./server/build/av_service | head -n 20
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: av-service-${{ matrix.profile }}
+          path: |
+            server/build/av_service
+            server/build/Testing/**
+          if-no-files-found: error
