@@ -1,0 +1,16 @@
+services:
+  av-service:
+    image: ${AV_SERVICE_IMAGE:-ghcr.io/cipfz/youtobe-workflow/av-service:latest}
+    pull_policy: always
+    container_name: av-service
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data/input:/data/input
+      - ./data/output:/data/output
+      - ./models/whisper:/models/whisper
+    environment:
+      - LD_LIBRARY_PATH=/usr/local/lib
+    command: ["/app/av_service"]
