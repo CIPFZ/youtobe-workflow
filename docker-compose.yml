@@ -3,6 +3,7 @@ services:
     image: ${AV_SERVICE_IMAGE:-ghcr.io/cipfz/youtobe-workflow/av-service:latest}
     pull_policy: always
     container_name: av-service
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     restart: unless-stopped
     ports:
       - "8888:8888"

@@ -5,6 +5,8 @@ SERVICE_NAME="${SERVICE_NAME:-av-service}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:8888/healthz}"
 MAX_RETRIES="${MAX_RETRIES:-20}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-2}"
+LOCAL_UID="${LOCAL_UID:-$(id -u)}"
+LOCAL_GID="${LOCAL_GID:-$(id -g)}"
 
 if [ "$#" -lt 1 ]; then
   echo "usage: $0 <image_tag>"
@@ -17,6 +19,7 @@ TARGET_IMAGE="$1"
 echo "[STEP] rollback to ${TARGET_IMAGE}"
 docker rm -f "${SERVICE_NAME}" >/dev/null 2>&1 || true
 docker run -d --name "${SERVICE_NAME}" \
+  --user "${LOCAL_UID}:${LOCAL_GID}" \
   --restart unless-stopped \
   -p 8888:8888 \
   -v "$(pwd)/data/input:/data/input" \

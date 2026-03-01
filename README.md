@@ -9,7 +9,7 @@
 ### 1) 构建并启动
 
 ```bash
-docker compose up --build -d
+LOCAL_UID=$(id -u) LOCAL_GID=$(id -g) docker compose up --build -d
 ```
 
 ### 2) 查看服务日志
@@ -17,6 +17,8 @@ docker compose up --build -d
 ```bash
 docker compose logs -f av-service
 ```
+
+> 已默认按 `LOCAL_UID/LOCAL_GID` 运行容器进程，避免输出文件归属 `root:root`。
 
 ### 3) 健康检查
 
@@ -48,12 +50,13 @@ curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 
 ```bash
 chmod +x scripts/deploy_update.sh scripts/rollback_last.sh
-./scripts/deploy_update.sh
+LOCAL_UID=$(id -u) LOCAL_GID=$(id -g) ./scripts/deploy_update.sh
 ```
 
 可选环境变量：
 
 - `SERVICE_NAME`（默认 `av-service`）
+- `LOCAL_UID` / `LOCAL_GID`（默认当前用户 uid/gid）
 - `HEALTH_URL`（默认 `http://127.0.0.1:8888/healthz`）
 - `MAX_RETRIES`（默认 `30`）
 - `SLEEP_SECONDS`（默认 `2`）

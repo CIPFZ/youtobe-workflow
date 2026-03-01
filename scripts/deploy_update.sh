@@ -6,6 +6,8 @@ HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:8888/healthz}"
 MAX_RETRIES="${MAX_RETRIES:-30}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-2}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+LOCAL_UID="${LOCAL_UID:-$(id -u)}"
+LOCAL_GID="${LOCAL_GID:-$(id -g)}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "[ERROR] docker command not found"
@@ -30,10 +32,10 @@ else
 fi
 
 echo "[STEP] pulling latest images..."
-docker compose -f "${COMPOSE_FILE}" pull
+LOCAL_UID="${LOCAL_UID}" LOCAL_GID="${LOCAL_GID}" docker compose -f "${COMPOSE_FILE}" pull
 
 echo "[STEP] starting updated container..."
-docker compose -f "${COMPOSE_FILE}" up -d
+LOCAL_UID="${LOCAL_UID}" LOCAL_GID="${LOCAL_GID}" docker compose -f "${COMPOSE_FILE}" up -d
 
 echo "[STEP] waiting for health endpoint: ${HEALTH_URL}"
 for ((i=1; i<=MAX_RETRIES; i++)); do
@@ -50,6 +52,7 @@ if [ -n "${CURRENT_IMAGE}" ]; then
   echo "[ROLLBACK] rolling back to previous image: ${CURRENT_IMAGE}"
   docker rm -f "${SERVICE_NAME}" >/dev/null 2>&1 || true
   docker run -d --name "${SERVICE_NAME}" \
+    --user "${LOCAL_UID}:${LOCAL_GID}" \
     --restart unless-stopped \
     -p 8888:8888 \
     -v "$(pwd)/data/input:/data/input" \
