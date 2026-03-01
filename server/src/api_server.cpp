@@ -67,8 +67,8 @@ std::string json_escape(const std::string& s) {
 }
 }  // namespace
 
-ApiServer::ApiServer(TaskManager& manager, MergeWorker& worker, AsrWorker& asr_worker)
-    : manager_(manager), worker_(worker), asr_worker_(asr_worker) {}
+ApiServer::ApiServer(TaskManager& manager, MergeWorker& worker, AsrWorker& asr_worker, AudioConvertWorker& audio_convert_worker)
+    : manager_(manager), worker_(worker), asr_worker_(asr_worker), audio_convert_worker_(audio_convert_worker) {}
 
 int ApiServer::start(unsigned short port) const {
 #ifdef HAVE_WORKFLOW
@@ -122,6 +122,48 @@ int ApiServer::start(unsigned short port) const {
             return;
         }
 
+
+
+        if (method == "POST" && uri == "/api/v1/audio/m4a-to-wav") {
+            const void* body_ptr = nullptr;
+            size_t body_len = 0;
+            req->get_parsed_body(&body_ptr, &body_len);
+            const std::string body(static_cast<const char*>(body_ptr), body_len);
+
+            const std::string input_path = extract_json_value(body, "input_path");
+            const std::string output_path = extract_json_value(body, "output_path");
+
+            if (input_path.empty() || output_path.empty()) {
+                resp->set_status_code("400");
+                resp->append_output_body("{\"error\":\"input_path/output_path are required\"}");
+                return;
+            }
+
+            bool reused = false;
+            const std::string fp = build_audio_convert_fingerprint(input_path, output_path);
+            const std::string task_id = manager_.create_or_reuse(fp, "", input_path, output_path, &reused);
+
+            if (!reused) {
+                manager_.update_status(task_id, TaskStatus::Running, 0, "audio convert worker started");
+                std::thread([this, task_id, input_path, output_path]() {
+                    const int rc = audio_convert_worker_.run_m4a_to_wav(input_path, output_path,
+                        [this, task_id](int p, const std::string& msg) {
+                            manager_.update_status(task_id, p >= 100 ? TaskStatus::Success : TaskStatus::Running, p, msg);
+                        });
+                    if (rc != 0) {
+                        std::string err = "m4a->wav convert failed";
+                        const auto rec = manager_.get_task(task_id);
+                        if (rec.has_value() && !rec->message.empty()) {
+                            err = rec->message;
+                        }
+                        manager_.update_status(task_id, TaskStatus::Failed, 0, err);
+                    }
+                }).detach();
+            }
+
+            resp->append_output_body("{\"task_id\":\"" + task_id + "\",\"reused\":" + (reused ? "true" : "false") + "}");
+            return;
+        }
 
         if (method == "POST" && uri == "/api/v1/asr") {
             const void* body_ptr = nullptr;

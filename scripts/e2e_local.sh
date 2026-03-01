@@ -10,6 +10,7 @@ SRT_OUTPUT="${SRT_OUTPUT:-/data/output/audio.en.srt}"
 MODEL_DIR="${MODEL_DIR:-/models/whisper}"
 MODEL_NAME="${MODEL_NAME:-ggml-base.en.bin}"
 LANGUAGE="${LANGUAGE:-en}"
+CONVERT_VIA_API="${CONVERT_VIA_API:-1}"
 MAX_RETRIES="${MAX_RETRIES:-60}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-1}"
 LOCAL_UID="${LOCAL_UID:-$(id -u)}"
@@ -93,8 +94,25 @@ poll_task "${MERGE_TASK_ID}" "merge"
 echo "[STEP] verify merged file"
 ls -lh data/output/out.mp4
 
-echo "[STEP] convert audio to wav 16k mono"
-ffmpeg -y -i data/input/audio.m4a -ar 16000 -ac 1 -c:a pcm_s16le data/input/audio.wav
+if [ "${CONVERT_VIA_API}" = "1" ]; then
+  echo "[STEP] submit m4a->wav convert task"
+  CONVERT_RESP="$(curl -fsS -X POST "${BASE_URL}/api/v1/audio/m4a-to-wav" \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "input_path": "'"${AUDIO_INPUT}"'",
+      "output_path": "'"${WAV_INPUT}"'"
+    }')"
+  echo "[INFO] convert response: ${CONVERT_RESP}"
+  CONVERT_TASK_ID="$(echo "${CONVERT_RESP}" | extract_task_id)"
+  if [ -z "${CONVERT_TASK_ID}" ]; then
+    echo "[ERROR] unable to parse convert task_id"
+    exit 1
+  fi
+  poll_task "${CONVERT_TASK_ID}" "m4a-to-wav convert"
+else
+  echo "[STEP] convert audio to wav 16k mono via local ffmpeg"
+  ffmpeg -y -i data/input/audio.m4a -ar 16000 -ac 1 -c:a pcm_s16le data/input/audio.wav
+fi
 
 echo "[STEP] submit asr task"
 ASR_RESP="$(curl -fsS -X POST "${BASE_URL}/api/v1/asr" \

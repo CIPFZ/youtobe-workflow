@@ -1,6 +1,7 @@
 #include "api_server.h"
 #include "asr_worker.h"
 #include "merge_worker.h"
+#include "audio_convert_worker.h"
 #include "task_manager.h"
 
 #include <iostream>
@@ -9,7 +10,8 @@ int main() {
     avsvc::TaskManager manager;
     avsvc::MergeWorker worker;
     avsvc::AsrWorker asr_worker;
-    avsvc::ApiServer server(manager, worker, asr_worker);
+    avsvc::AudioConvertWorker audio_convert_worker;
+    avsvc::ApiServer server(manager, worker, asr_worker, audio_convert_worker);
 
 #ifdef HAVE_WORKFLOW
     std::cout << "av_service starting on 0.0.0.0:8888\n";

@@ -42,6 +42,23 @@ curl -X POST http://127.0.0.1:8888/api/v1/merge \
   }'
 ```
 
+### 4.1) 提交 m4a -> wav 转换任务（异步）
+
+```bash
+curl -X POST http://127.0.0.1:8888/api/v1/audio/m4a-to-wav \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "input_path": "/data/input/audio.m4a",
+    "output_path": "/data/input/audio.wav"
+  }'
+```
+
+然后通过任务接口轮询状态：
+
+```bash
+curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
+```
+
 ### 5) 查询任务状态
 
 ```bash

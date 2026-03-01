@@ -66,6 +66,7 @@ add_library(av_core
   src/task_manager.cpp
   src/merge_worker.cpp
   src/asr_worker.cpp
+  src/audio_convert_worker.cpp
   src/api_server.cpp
 )
 
@@ -107,3 +108,7 @@ add_test(NAME test_integration_flow COMMAND test_integration_flow)
 add_executable(test_asr_worker tests/test_asr_worker.cpp)
 target_link_libraries(test_asr_worker PRIVATE av_core)
 add_test(NAME test_asr_worker COMMAND test_asr_worker)
+
+add_executable(test_audio_convert_worker tests/test_audio_convert_worker.cpp)
+target_link_libraries(test_audio_convert_worker PRIVATE av_core)
+add_test(NAME test_audio_convert_worker COMMAND test_audio_convert_worker)
