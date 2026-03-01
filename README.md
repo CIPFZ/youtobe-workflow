@@ -9,7 +9,11 @@
 ### 1) 构建并启动
 
 ```bash
+mkdir -p data/input data/output models/whisper
 LOCAL_UID=$(id -u) LOCAL_GID=$(id -g) docker compose up --build -d
+
+# 或者直接跑一键端到端脚本（会自动执行 health/merge/asr/task 轮询）
+bash scripts/e2e_local.sh
 ```
 
 ### 2) 查看服务日志
@@ -43,6 +47,51 @@ curl -X POST http://127.0.0.1:8888/api/v1/merge \
 ```bash
 curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 ```
+
+### 5.2) 一键端到端自测脚本
+
+仓库内置 `scripts/e2e_local.sh`，默认会按下面顺序执行：
+
+1. `docker compose up --build -d`
+2. `GET /healthz`
+3. `POST /api/v1/merge` + 轮询 `GET /api/v1/task`
+4. `ffmpeg` 转 wav（16k/mono）
+5. `POST /api/v1/asr` + 轮询 `GET /api/v1/task`
+6. 校验 `/data/output/out.mp4` 与 `/data/output/audio.en.srt`
+
+运行方式：
+
+```bash
+bash scripts/e2e_local.sh
+```
+
+可选变量（按需覆盖）：`BASE_URL`、`MODEL_NAME`、`LANGUAGE`、`MAX_RETRIES`、`SLEEP_SECONDS`。
+
+
+### 5.1) 音频识别生成字幕（whisper.cpp C API）
+
+先把输入音频转成 WAV（`pcm_s16le`, mono, 16kHz）：
+
+```bash
+ffmpeg -y -i data/input/audio.m4a -ar 16000 -ac 1 -c:a pcm_s16le data/input/audio.wav
+```
+
+然后提交识别任务：
+
+```bash
+curl -X POST http://127.0.0.1:8888/api/v1/asr \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "audio_path": "/data/input/audio.wav",
+    "subtitle_path": "/data/output/audio.en.srt",
+    "model_dir": "/models/whisper",
+    "model_name": "ggml-base.en.bin",
+    "language": "en"
+  }'
+```
+
+> 当前 ASR 模块直接走 whisper.cpp C API。音频输入要求 WAV (`pcm_s16le`, mono, 16kHz)。
+
 
 ---
 
@@ -88,6 +137,7 @@ docker run -d --name av-service \
   -p 8888:8888 \
   -v $(pwd)/data/input:/data/input \
   -v $(pwd)/data/output:/data/output \
+  -v $(pwd)/models/whisper:/models/whisper \
   ghcr.io/<你的组织或用户名>/youtobe-workflow/av-service:latest
 ```
 

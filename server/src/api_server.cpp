@@ -67,8 +67,8 @@ std::string json_escape(const std::string& s) {
 }
 }  // namespace
 
-ApiServer::ApiServer(TaskManager& manager, MergeWorker& worker)
-    : manager_(manager), worker_(worker) {}
+ApiServer::ApiServer(TaskManager& manager, MergeWorker& worker, AsrWorker& asr_worker)
+    : manager_(manager), worker_(worker), asr_worker_(asr_worker) {}
 
 int ApiServer::start(unsigned short port) const {
 #ifdef HAVE_WORKFLOW
@@ -119,6 +119,54 @@ int ApiServer::start(unsigned short port) const {
             }
 
             resp->append_output_body("{\"task_id\":\"" + task_id + "\",\"reused\":" + (reused ? "true" : "false") + "}");
+            return;
+        }
+
+
+        if (method == "POST" && uri == "/api/v1/asr") {
+            const void* body_ptr = nullptr;
+            size_t body_len = 0;
+            req->get_parsed_body(&body_ptr, &body_len);
+            const std::string body(static_cast<const char*>(body_ptr), body_len);
+
+            const std::string audio = extract_json_value(body, "audio_path");
+            const std::string subtitle = extract_json_value(body, "subtitle_path");
+            const std::string model_dir = extract_json_value(body, "model_dir");
+            const std::string model_name = extract_json_value(body, "model_name");
+            std::string language = extract_json_value(body, "language");
+            if (language.empty()) {
+                language = "en";
+            }
+
+            if (audio.empty() || subtitle.empty() || model_dir.empty() || model_name.empty()) {
+                resp->set_status_code("400");
+                resp->append_output_body("{"error":"audio_path/subtitle_path/model_dir/model_name are required"}");
+                return;
+            }
+
+            bool reused = false;
+            const std::string fp = build_fingerprint(audio, model_dir + "/" + model_name, subtitle + "|" + language);
+            const std::string task_id = manager_.create_or_reuse(fp, "", audio, subtitle, &reused);
+
+            if (!reused) {
+                manager_.update_status(task_id, TaskStatus::Running, 0, "asr worker started");
+                std::thread([this, task_id, audio, subtitle, model_dir, model_name, language]() {
+                    const int rc = asr_worker_.run(audio, subtitle, model_dir, model_name, language,
+                        [this, task_id](int p, const std::string& msg) {
+                            manager_.update_status(task_id, p >= 100 ? TaskStatus::Success : TaskStatus::Running, p, msg);
+                        });
+                    if (rc != 0) {
+                        std::string err = "asr failed";
+                        const auto rec = manager_.get_task(task_id);
+                        if (rec.has_value() && !rec->message.empty()) {
+                            err = rec->message;
+                        }
+                        manager_.update_status(task_id, TaskStatus::Failed, 0, err);
+                    }
+                }).detach();
+            }
+
+            resp->append_output_body("{"task_id":"" + task_id + "","reused":" + (reused ? "true" : "false") + "}");
             return;
         }
 

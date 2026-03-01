@@ -10,6 +10,7 @@ services:
     volumes:
       - ./data/input:/data/input
       - ./data/output:/data/output
+      - ./models/whisper:/models/whisper
     environment:
       - LD_LIBRARY_PATH=/usr/local/lib
     command: ["/app/av_service"]

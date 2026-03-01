@@ -1,4 +1,5 @@
 #include "api_server.h"
+#include "asr_worker.h"
 #include "merge_worker.h"
 #include "task_manager.h"
 
@@ -7,7 +8,8 @@
 int main() {
     avsvc::TaskManager manager;
     avsvc::MergeWorker worker;
-    avsvc::ApiServer server(manager, worker);
+    avsvc::AsrWorker asr_worker;
+    avsvc::ApiServer server(manager, worker, asr_worker);
 
 #ifdef HAVE_WORKFLOW
     std::cout << "av_service starting on 0.0.0.0:8888\n";
