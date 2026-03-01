@@ -52,7 +52,7 @@ endif()
 
 set(FFMPEG_READY OFF)
 if (ENABLE_FFMPEG)
-  pkg_check_modules(FFMPEG IMPORTED_TARGET libavformat libavcodec libavutil)
+  pkg_check_modules(FFMPEG IMPORTED_TARGET libavformat libavcodec libavutil libswresample)
   if (FFMPEG_FOUND)
     message(STATUS "Found FFmpeg via pkg-config")
     set(FFMPEG_READY ON)

@@ -3,7 +3,7 @@ FROM ubuntu:22.04 AS build
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential cmake pkg-config git ca-certificates \
-    libavformat-dev libavcodec-dev libavutil-dev \
+    libavformat-dev libavcodec-dev libavutil-dev libswresample-dev \
     libssl-dev zlib1g-dev uuid-dev && \
     rm -rf /var/lib/apt/lists/*
 
@@ -38,8 +38,7 @@ FROM ubuntu:22.04 AS runtime
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libstdc++6 ca-certificates \
-    ffmpeg \
-    libavformat58 libavcodec58 libavutil56 \
+    libavformat58 libavcodec58 libavutil56 libswresample3 \
     libssl3 zlib1g libuuid1 && \
     rm -rf /var/lib/apt/lists/*
 
