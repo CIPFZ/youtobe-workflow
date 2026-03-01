@@ -1,0 +1,33 @@
+#pragma once
+
+#include "asr_worker.h"
+#include "audio_convert_worker.h"
+#include "compose_worker.h"
+#include "subtitle_embed_worker.h"
+#include "merge_worker.h"
+#include "task_manager.h"
+
+#include <string>
+
+namespace avsvc {
+
+class ApiServer {
+public:
+    ApiServer(TaskManager& manager,
+              MergeWorker& worker,
+              AsrWorker& asr_worker,
+              AudioConvertWorker& audio_convert_worker,
+              SubtitleEmbedWorker& subtitle_embed_worker,
+              ComposeWorker& compose_worker);
+    int start(unsigned short port) const;
+
+private:
+    TaskManager& manager_;
+    MergeWorker& worker_;
+    AsrWorker& asr_worker_;
+    AudioConvertWorker& audio_convert_worker_;
+    SubtitleEmbedWorker& subtitle_embed_worker_;
+    ComposeWorker& compose_worker_;
+};
+
+}  // namespace avsvc
