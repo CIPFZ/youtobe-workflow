@@ -31,13 +31,22 @@ set(WHISPERCPP_READY OFF)
 if (ENABLE_WHISPERCPP)
   find_path(WHISPERCPP_INCLUDE_DIR whisper.h)
   find_library(WHISPERCPP_LIBRARY NAMES whisper)
-  if (WHISPERCPP_INCLUDE_DIR AND WHISPERCPP_LIBRARY)
+  find_path(
+    GGML_INCLUDE_DIR
+    NAMES ggml.h
+    HINTS
+      ${WHISPERCPP_INCLUDE_DIR}
+      ${WHISPERCPP_INCLUDE_DIR}/whisper
+      /usr/local/include/whisper
+  )
+  if (WHISPERCPP_INCLUDE_DIR AND WHISPERCPP_LIBRARY AND GGML_INCLUDE_DIR)
     message(STATUS "Found whisper.cpp include dir: ${WHISPERCPP_INCLUDE_DIR}")
     message(STATUS "Found whisper.cpp library: ${WHISPERCPP_LIBRARY}")
+    message(STATUS "Found ggml include dir: ${GGML_INCLUDE_DIR}")
     set(WHISPERCPP_READY ON)
     add_compile_definitions(HAVE_WHISPERCPP=1)
   else()
-    message(WARNING "whisper.cpp headers/library not found; ASR endpoint will report disabled")
+    message(WARNING "whisper.cpp/ggml headers or library not found; ASR endpoint will report disabled")
   endif()
 endif()
 
@@ -70,7 +79,7 @@ if (WORKFLOW_READY)
 endif()
 
 if (WHISPERCPP_READY)
-  target_include_directories(av_core PUBLIC ${WHISPERCPP_INCLUDE_DIR})
+  target_include_directories(av_core PUBLIC ${WHISPERCPP_INCLUDE_DIR} ${GGML_INCLUDE_DIR})
   target_link_libraries(av_core PUBLIC ${WHISPERCPP_LIBRARY})
 endif()
 

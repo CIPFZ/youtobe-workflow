@@ -140,7 +140,7 @@ int ApiServer::start(unsigned short port) const {
 
             if (audio.empty() || subtitle.empty() || model_dir.empty() || model_name.empty()) {
                 resp->set_status_code("400");
-                resp->append_output_body("{"error":"audio_path/subtitle_path/model_dir/model_name are required"}");
+                resp->append_output_body("{\"error\":\"audio_path/subtitle_path/model_dir/model_name are required\"}");
                 return;
             }
 
@@ -166,7 +166,7 @@ int ApiServer::start(unsigned short port) const {
                 }).detach();
             }
 
-            resp->append_output_body("{"task_id":"" + task_id + "","reused":" + (reused ? "true" : "false") + "}");
+            resp->append_output_body("{\"task_id\":\"" + task_id + "\",\"reused\":" + (reused ? "true" : "false") + "}");
             return;
         }
 

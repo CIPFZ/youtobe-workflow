@@ -20,6 +20,8 @@ RUN git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git /tmp/whisper
       -DWHISPER_BUILD_EXAMPLES=OFF && \
     cmake --build /tmp/whisper.cpp/build -j"$(nproc)" && \
     cp -a /tmp/whisper.cpp/include/whisper.h /usr/local/include/ && \
+    mkdir -p /usr/local/include/whisper && \
+    cp -a /tmp/whisper.cpp/ggml/include/ggml*.h /usr/local/include/whisper/ && \
     cp -a /tmp/whisper.cpp/build/src/libwhisper.so* /usr/local/lib/ && \
     cp -a /tmp/whisper.cpp/build/ggml/src/libggml*.so* /usr/local/lib/ && \
     ldconfig
@@ -46,7 +48,7 @@ COPY --from=build /usr/local/lib/libworkflow.so* /usr/local/lib/
 COPY --from=build /usr/local/lib/libwhisper.so* /usr/local/lib/
 COPY --from=build /usr/local/lib/libggml*.so* /usr/local/lib/
 
-ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/usr/local/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 EXPOSE 8888
 
 ENTRYPOINT ["/app/av_service"]
