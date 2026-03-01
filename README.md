@@ -61,6 +61,24 @@ curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 
 > 该接口内部使用 FFmpeg C API 完成解码/重采样/编码，不依赖 shell 命令调用。
 
+### 4.2) 提交 ass 字幕嵌入 mp4 任务（异步，FFmpeg C API）
+
+```bash
+curl -X POST http://127.0.0.1:8888/api/v1/subtitle/ass-to-mp4 \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "video_path": "/data/input/video.mp4",
+    "subtitle_path": "/data/input/subtitle.ass",
+    "output_path": "/data/output/video.with_sub.mp4"
+  }'
+```
+
+然后通过任务接口轮询状态：
+
+```bash
+curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
+```
+
 ### 5) 查询任务状态
 
 ```bash
