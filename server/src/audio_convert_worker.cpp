@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
+#include <sys/wait.h>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -28,6 +29,11 @@ int AudioConvertWorker::run_m4a_to_wav(const std::string& input_path,
     }
 
 #ifdef HAVE_FFMPEG
+    if (std::system("command -v ffmpeg >/dev/null 2>&1") != 0) {
+        if (on_progress) on_progress(0, "failed: ffmpeg command not found in runtime");
+        return -2;
+    }
+
     if (on_progress) on_progress(10, "running ffmpeg");
 
     const std::string cmd =
@@ -36,8 +42,14 @@ int AudioConvertWorker::run_m4a_to_wav(const std::string& input_path,
 
     const int rc = std::system(cmd.c_str());
     if (rc != 0) {
-        if (on_progress) on_progress(0, "failed: ffmpeg convert command");
-        return -2;
+        if (WIFEXITED(rc)) {
+            if (on_progress) {
+                on_progress(0, "failed: ffmpeg convert command exit code " + std::to_string(WEXITSTATUS(rc)));
+            }
+        } else {
+            if (on_progress) on_progress(0, "failed: ffmpeg convert command terminated unexpectedly");
+        }
+        return -3;
     }
 
     if (on_progress) on_progress(100, "done");

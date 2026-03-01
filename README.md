@@ -59,6 +59,12 @@ curl -X POST http://127.0.0.1:8888/api/v1/audio/m4a-to-wav \
 curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 ```
 
+> 如果你调用 `/api/v1/audio/m4a-to-wav` 返回 `failed: ffmpeg command not found in runtime`，请重新构建并启动最新镜像：
+>
+> ```bash
+> LOCAL_UID=$(id -u) LOCAL_GID=$(id -g) docker compose up --build -d
+> ```
+>
 ### 5) 查询任务状态
 
 ```bash

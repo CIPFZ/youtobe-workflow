@@ -38,6 +38,7 @@ FROM ubuntu:22.04 AS runtime
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libstdc++6 ca-certificates \
+    ffmpeg \
     libavformat58 libavcodec58 libavutil56 \
     libssl3 zlib1g libuuid1 && \
     rm -rf /var/lib/apt/lists/*
