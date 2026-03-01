@@ -68,6 +68,7 @@ add_library(av_core
   src/asr_worker.cpp
   src/audio_convert_worker.cpp
   src/subtitle_embed_worker.cpp
+  src/compose_worker.cpp
   src/api_server.cpp
 )
 
@@ -117,3 +118,7 @@ add_test(NAME test_audio_convert_worker COMMAND test_audio_convert_worker)
 add_executable(test_subtitle_embed_worker tests/test_subtitle_embed_worker.cpp)
 target_link_libraries(test_subtitle_embed_worker PRIVATE av_core)
 add_test(NAME test_subtitle_embed_worker COMMAND test_subtitle_embed_worker)
+
+add_executable(test_compose_worker tests/test_compose_worker.cpp)
+target_link_libraries(test_compose_worker PRIVATE av_core)
+add_test(NAME test_compose_worker COMMAND test_compose_worker)

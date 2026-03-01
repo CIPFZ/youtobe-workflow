@@ -79,6 +79,25 @@ curl -X POST http://127.0.0.1:8888/api/v1/subtitle/ass-to-mp4 \
 curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
 ```
 
+### 4.3) 提交 音频+视频+ASS 一次性合并任务（异步，FFmpeg C API）
+
+```bash
+curl -X POST http://127.0.0.1:8888/api/v1/compose \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "video_path": "/data/input/video.mp4",
+    "audio_path": "/data/input/audio.m4a",
+    "subtitle_path": "/data/input/subtitle.ass",
+    "output_path": "/data/output/final.with_sub.mp4"
+  }'
+```
+
+然后通过任务接口轮询状态：
+
+```bash
+curl "http://127.0.0.1:8888/api/v1/task?task_id=task_xxx"
+```
+
 ### 5) 查询任务状态
 
 ```bash
